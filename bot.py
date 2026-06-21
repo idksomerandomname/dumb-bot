@@ -1,11 +1,14 @@
 import os
 import discord
-from google import genai
+from openai import OpenAI
 
 TOKEN = os.environ['DISCORD_TOKEN']
 CHANNEL_ID = int(os.environ['CHANNEL_ID'])
 
-client = genai.Client(api_key=os.environ['GEMINI_API_KEY'])
+client = OpenAI(
+    base_url='https://openrouter.ai/api/v1',
+    api_key=os.environ['OPENROUTER_KEY'],
+)
 
 SYSTEM = (
     "You are a 10-year-old kid named Lil Watrib. You are chill, dumb, and friendly. "
@@ -28,13 +31,16 @@ class DumbBot(discord.Client):
 
         async with message.channel.typing():
             try:
-                resp = client.models.generate_content(
-                    model='gemini-2.0-flash',
-                    contents=f'{SYSTEM}\n\nMessage: {message.content}\n\nReply:',
+                resp = client.chat.completions.create(
+                    model='meta-llama/llama-3.2-3b-instruct:free',
+                    messages=[
+                        {'role': 'system', 'content': SYSTEM},
+                        {'role': 'user', 'content': message.content},
+                    ],
                 )
-                reply = resp.text.strip() if resp.text else "idk"
+                reply = resp.choices[0].message.content.strip()
             except Exception as e:
-                print(f'Gemini error: {e}')
+                print(f'OpenRouter error: {e}')
                 reply = "idk lol"
 
         await message.reply(reply)
