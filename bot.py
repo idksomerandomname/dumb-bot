@@ -84,8 +84,8 @@ class DumbBot(discord.Client):
         print(f'{self.user} is live and acting like a kid!')
         await self.change_presence(activity=random.choice(STATUSES))
         for cmd in self.tree.get_commands():
-            cmd.allowed_installs = AppInstallationType.guild_install | AppInstallationType.user_install
-            cmd.allowed_contexts = AppCommandContext.guild | AppCommandContext.bot_dm | AppCommandContext.private_channel
+            cmd.allowed_installs = AppInstallationType(0) | AppInstallationType(1)
+            cmd.allowed_contexts = AppCommandContext(0) | AppCommandContext(1) | AppCommandContext(2)
         try:
             synced = await self.tree.sync()
             print(f'Slash commands synced! ({len(synced)} commands)')
@@ -176,8 +176,8 @@ async def talk(interaction: discord.Interaction, message: str):
 @app.tree.command(name='sync', description='Force re-sync slash commands')
 async def sync(interaction: discord.Interaction):
     for cmd in app.tree.get_commands():
-        cmd.allowed_installs = AppInstallationType.guild_install | AppInstallationType.user_install
-        cmd.allowed_contexts = AppCommandContext.guild | AppCommandContext.bot_dm | AppCommandContext.private_channel
+        cmd.allowed_installs = AppInstallationType(0) | AppInstallationType(1)
+        cmd.allowed_contexts = AppCommandContext(0) | AppCommandContext(1) | AppCommandContext(2)
     await interaction.response.defer(ephemeral=True)
     try:
         synced = await app.tree.sync()
