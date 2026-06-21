@@ -3,7 +3,7 @@ import discord
 import asyncio
 import random
 from collections import defaultdict, deque
-from discord.app_commands import allowed_installs, allowed_contexts
+from discord.app_commands import AppInstallationType, AppCommandContext
 from openai import AsyncOpenAI
 
 TOKEN = os.environ['DISCORD_TOKEN']
@@ -80,8 +80,12 @@ class DumbBot(discord.Client):
         self.tree = discord.app_commands.CommandTree(self)
 
     async def on_ready(self):
+        print(f'discord.py version: {discord.__version__}')
         print(f'{self.user} is live and acting like a kid!')
         await self.change_presence(activity=random.choice(STATUSES))
+        for cmd in self.tree.get_commands():
+            cmd.allowed_installs = AppInstallationType.guild_install | AppInstallationType.user_install
+            cmd.allowed_contexts = AppCommandContext.guild | AppCommandContext.bot_dm | AppCommandContext.private_channel
         try:
             synced = await self.tree.sync()
             print(f'Slash commands synced! ({len(synced)} commands)')
@@ -150,8 +154,6 @@ class DumbBot(discord.Client):
 app = DumbBot()
 
 @app.tree.command(name='talk', description='Talk to Lil Watrib anywhere')
-@allowed_installs(guilds=True, users=True)
-@allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def talk(interaction: discord.Interaction, message: str):
     await interaction.response.defer()
     key = (interaction.guild_id or 0, interaction.channel_id)
@@ -173,6 +175,9 @@ async def talk(interaction: discord.Interaction, message: str):
 
 @app.tree.command(name='sync', description='Force re-sync slash commands')
 async def sync(interaction: discord.Interaction):
+    for cmd in app.tree.get_commands():
+        cmd.allowed_installs = AppInstallationType.guild_install | AppInstallationType.user_install
+        cmd.allowed_contexts = AppCommandContext.guild | AppCommandContext.bot_dm | AppCommandContext.private_channel
     await interaction.response.defer(ephemeral=True)
     try:
         synced = await app.tree.sync()
