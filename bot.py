@@ -82,8 +82,11 @@ class DumbBot(discord.Client):
     async def on_ready(self):
         print(f'{self.user} is live and acting like a kid!')
         await self.change_presence(activity=random.choice(STATUSES))
-        await self.tree.sync()
-        print('Slash commands synced!')
+        try:
+            synced = await self.tree.sync()
+            print(f'Slash commands synced! ({len(synced)} commands)')
+        except Exception as e:
+            print(f'Sync failed: {e}')
 
     async def on_message(self, message):
         if message.author == self.user:
@@ -167,5 +170,17 @@ async def talk(interaction: discord.Interaction, message: str):
             break
 
     await interaction.followup.send(reply)
+
+@app.tree.command(name='sync', description='Force re-sync slash commands (owner only)')
+async def sync(interaction: discord.Interaction):
+    if interaction.user.id != int(os.environ.get('OWNER_ID', 0)):
+        await interaction.response.send_message("nah you're not my dad", ephemeral=True)
+        return
+    await interaction.response.defer(ephemeral=True)
+    try:
+        synced = await app.tree.sync()
+        await interaction.followup.send(f'Synced {len(synced)} commands! Try /talk now.', ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f'Sync failed: {e}', ephemeral=True)
 
 app.run(TOKEN)
