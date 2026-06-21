@@ -1,11 +1,12 @@
 import os
 import discord
-from openai import OpenAI
+import asyncio
+from openai import AsyncOpenAI
 
 TOKEN = os.environ['DISCORD_TOKEN']
 CHANNEL_ID = int(os.environ['CHANNEL_ID'])
 
-client = OpenAI(
+client = AsyncOpenAI(
     base_url='https://openrouter.ai/api/v1',
     api_key=os.environ['OPENROUTER_KEY'],
 )
@@ -16,32 +17,46 @@ SYSTEM = (
     "sometimes misspelled. You say things like idk, bro, nice, cool, "
     "same, fr, bet, lol, hmm, ok, yeah, nah. You don't "
     "understand complex topics. You're just a chill dumb kid vibing. "
-    "Keep responses very short (1-10 words). Never be mean."
+    "Keep responses very short (1-5 words). Never be mean."
 )
+
+last_reply = 0
+COOLDOWN = 2
 
 class DumbBot(discord.Client):
     async def on_ready(self):
         print(f'{self.user} is live and acting dumb!')
 
     async def on_message(self, message):
+        global last_reply
         if message.author == self.user:
             return
         if message.channel.id != CHANNEL_ID:
             return
 
+        now = asyncio.get_event_loop().time()
+        if now - last_reply < COOLDOWN:
+            return
+        last_reply = now
+
         async with message.channel.typing():
-            try:
-                resp = client.chat.completions.create(
-                    model='meta-llama/llama-3.2-3b-instruct:free',
-                    messages=[
-                        {'role': 'system', 'content': SYSTEM},
-                        {'role': 'user', 'content': message.content},
-                    ],
-                )
-                reply = resp.choices[0].message.content.strip()
-            except Exception as e:
-                print(f'OpenRouter error: {e}')
-                reply = "idk lol"
+            for attempt in range(3):
+                try:
+                    resp = await client.chat.completions.create(
+                        model='google/gemini-2.0-flash-exp:free',
+                        messages=[
+                            {'role': 'system', 'content': SYSTEM},
+                            {'role': 'user', 'content': message.content},
+                        ],
+                        max_tokens=50,
+                    )
+                    reply = resp.choices[0].message.content.strip()
+                    break
+                except Exception as e:
+                    print(f'OpenRouter attempt {attempt+1}: {e}')
+                    if attempt < 2:
+                        await asyncio.sleep(3)
+                    reply = "idk lol"
 
         await message.reply(reply)
 
