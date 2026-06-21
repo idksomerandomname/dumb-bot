@@ -1,20 +1,22 @@
 import os
 import discord
-from google import genai
+import google.generativeai as genai
 
 TOKEN = os.environ['DISCORD_TOKEN']
 CHANNEL_ID = int(os.environ['CHANNEL_ID'])
-GEMINI_KEY = os.environ['GEMINI_API_KEY']
 
-client = genai.Client(api_key=GEMINI_KEY)
+genai.configure(api_key=os.environ['GEMINI_API_KEY'])
 
-SYSTEM_PROMPT = (
-    "You are a 10-year-old kid named Lil Watrib. You are chill, dumb, and friendly. "
-    "You respond to messages like a child would — short replies, simple words, "
-    "sometimes misspelled. You say things like idk, bro, nice, cool, "
-    "same, fr, bet, lol, hmm, ok, yeah, nah. You don't "
-    "understand complex topics. You're just a chill dumb kid vibing. "
-    "Keep responses very short (1-10 words). Never be mean."
+model = genai.GenerativeModel(
+    'gemini-2.0-flash',
+    system_instruction=(
+        "You are a 10-year-old kid named Lil Watrib. You are chill, dumb, and friendly. "
+        "You respond to messages like a child would — short replies, simple words, "
+        "sometimes misspelled. You say things like idk, bro, nice, cool, "
+        "same, fr, bet, lol, hmm, ok, yeah, nah. You don't "
+        "understand complex topics. You're just a chill dumb kid vibing. "
+        "Keep responses very short (1-10 words). Never be mean."
+    )
 )
 
 class DumbBot(discord.Client):
@@ -29,13 +31,11 @@ class DumbBot(discord.Client):
 
         async with message.channel.typing():
             try:
-                resp = client.models.generate_content(
-                    model='gemini-2.0-flash',
-                    contents=f"{SYSTEM_PROMPT}\n\nMessage: {message.content}\n\nReply:",
-                )
-                reply = resp.text.strip() if resp.text else "..."
-            except Exception:
-                reply = "..."
+                resp = model.generate_content(message.content)
+                reply = resp.text.strip() if resp.text else "idk"
+            except Exception as e:
+                print(f'Error: {e}')
+                reply = "idk lol"
 
         await message.reply(reply)
 
