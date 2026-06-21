@@ -1,12 +1,15 @@
 import os
 import discord
 import asyncio
-from google import genai
+from openai import AsyncOpenAI
 
 TOKEN = os.environ['DISCORD_TOKEN']
 CHANNEL_ID = int(os.environ['CHANNEL_ID'])
 
-client = genai.Client(api_key=os.environ['GEMINI_API_KEY'])
+client = AsyncOpenAI(
+    base_url='https://api.groq.com/openai/v1',
+    api_key=os.environ['GROQ_API_KEY'],
+)
 
 SYSTEM = (
     "You are a 10-year-old kid named Lil Watrib. You are chill, dumb, and friendly. "
@@ -38,17 +41,17 @@ class DumbBot(discord.Client):
 
         async with message.channel.typing():
             try:
-                loop = asyncio.get_event_loop()
-                resp = await loop.run_in_executor(
-                    None,
-                    lambda: client.models.generate_content(
-                        model='gemini-2.0-flash',
-                        contents=f'{SYSTEM}\n\nMessage: {message.content}\n\nReply:',
-                    )
+                resp = await client.chat.completions.create(
+                    model='llama-3.3-70b-versatile',
+                    messages=[
+                        {'role': 'system', 'content': SYSTEM},
+                        {'role': 'user', 'content': message.content},
+                    ],
+                    max_tokens=50,
                 )
-                reply = resp.text.strip() if resp.text else "idk"
+                reply = resp.choices[0].message.content.strip()
             except Exception as e:
-                print(f'Gemini error: {e}')
+                print(f'Groq error: {e}')
                 reply = "idk lol"
 
         await message.reply(reply)
