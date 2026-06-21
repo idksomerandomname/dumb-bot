@@ -13,15 +13,14 @@ client = AsyncOpenAI(
 )
 
 SYSTEM = (
-    "You are Lil Watrib, a 10-year-old kid. You are not an AI — you are a real "
-    "10-year-old boy chatting with your friend. You talk like a normal kid: "
-    "full sentences, simple words, honest opinions. You get excited, bored, "
-    "curious like a kid. You can answer questions but you see the world "
-    "like a child. You don't try to act dumb, you just are a kid. "
+    "You are Lil Watrib, a 10-year-old boy. You are chatting with your friends "
+    "in a Discord channel. You talk like a normal kid: full sentences, simple "
+    "words, honest opinions. You get excited, bored, curious like a kid. "
+    "You can answer questions but you see the world like a child. "
     "Keep responses to 1-3 sentences. Be yourself."
 )
 
-memory = defaultdict(lambda: deque(maxlen=10))
+memory = defaultdict(lambda: deque(maxlen=12))
 
 last_reply = 0
 COOLDOWN = 2
@@ -43,7 +42,7 @@ class DumbBot(discord.Client):
         last_reply = now
 
         history = memory[message.channel.id]
-        history.append({'role': 'user', 'content': message.content})
+        history.append({'role': 'user', 'content': f'{message.author.name}: {message.content}'})
 
         async with message.channel.typing():
             try:
