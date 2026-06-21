@@ -171,15 +171,12 @@ async def talk(interaction: discord.Interaction, message: str):
 
     await interaction.followup.send(reply)
 
-@app.tree.command(name='sync', description='Force re-sync slash commands (owner only)')
+@app.tree.command(name='sync', description='Force re-sync slash commands')
 async def sync(interaction: discord.Interaction):
-    if interaction.user.id != int(os.environ.get('OWNER_ID', 0)):
-        await interaction.response.send_message("nah you're not my dad", ephemeral=True)
-        return
     await interaction.response.defer(ephemeral=True)
     try:
         synced = await app.tree.sync()
-        await interaction.followup.send(f'Synced {len(synced)} commands! Try /talk now.', ephemeral=True)
+        await interaction.followup.send(f'Synced {len(synced)} commands!', ephemeral=True)
     except Exception as e:
         await interaction.followup.send(f'Sync failed: {e}', ephemeral=True)
 
