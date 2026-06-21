@@ -1,6 +1,7 @@
 import os
 import discord
 import asyncio
+from collections import defaultdict, deque
 from openai import AsyncOpenAI
 
 TOKEN = os.environ['DISCORD_TOKEN']
@@ -19,6 +20,8 @@ SYSTEM = (
     "like a child. You don't try to act dumb, you just are a kid. "
     "Keep responses to 1-3 sentences. Be yourself."
 )
+
+memory = defaultdict(lambda: deque(maxlen=10))
 
 last_reply = 0
 COOLDOWN = 2
@@ -39,13 +42,16 @@ class DumbBot(discord.Client):
             return
         last_reply = now
 
+        history = memory[message.channel.id]
+        history.append({'role': 'user', 'content': message.content})
+
         async with message.channel.typing():
             try:
                 resp = await client.chat.completions.create(
                     model='llama-3.3-70b-versatile',
                     messages=[
                         {'role': 'system', 'content': SYSTEM},
-                        {'role': 'user', 'content': message.content},
+                        *history,
                     ],
                     max_tokens=120,
                 )
@@ -54,6 +60,7 @@ class DumbBot(discord.Client):
                 print(f'Groq error: {e}')
                 reply = "idk lol"
 
+        history.append({'role': 'assistant', 'content': reply})
         await message.reply(reply)
 
 intents = discord.Intents.default()
