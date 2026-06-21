@@ -3,6 +3,7 @@ import discord
 import asyncio
 import random
 from collections import defaultdict, deque
+from discord.app_commands import allowed_installs, allowed_contexts
 from openai import AsyncOpenAI
 
 TOKEN = os.environ['DISCORD_TOKEN']
@@ -87,15 +88,18 @@ class DumbBot(discord.Client):
     async def on_message(self, message):
         if message.author == self.user:
             return
-        if message.channel.id != CHANNEL_ID:
+
+        is_dm = message.guild is None
+        if not is_dm and message.channel.id != CHANNEL_ID:
             return
 
         now = asyncio.get_event_loop().time()
-        if CHANNEL_ID in last_reply and now - last_reply[CHANNEL_ID] < COOLDOWN:
+        cid = message.channel.id
+        if cid in last_reply and now - last_reply[cid] < COOLDOWN:
             return
-        last_reply[CHANNEL_ID] = now
+        last_reply[cid] = now
 
-        if random.random() < 0.15:
+        if not is_dm and random.random() < 0.15:
             try:
                 await message.add_reaction(random.choice(REACTIONS))
             except:
@@ -109,7 +113,7 @@ class DumbBot(discord.Client):
             mood = " (you feel grumpy)"
         ctx = f'{message.author.name}: {message.content}{mood}'
 
-        history = memory[message.channel.id]
+        history = memory[cid]
         history.append({'role': 'user', 'content': ctx})
 
         async with message.channel.typing():
@@ -143,6 +147,8 @@ class DumbBot(discord.Client):
 app = DumbBot()
 
 @app.tree.command(name='talk', description='Talk to Lil Watrib anywhere')
+@allowed_installs(guilds=True, users=True)
+@allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def talk(interaction: discord.Interaction, message: str):
     await interaction.response.defer()
     key = (interaction.guild_id or 0, interaction.channel_id)
