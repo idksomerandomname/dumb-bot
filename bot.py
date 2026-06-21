@@ -51,6 +51,40 @@ STATUSES = [
 
 REACTIONS = ['😄', '😂', '👍', '🔥', '👀', '💀', '🤣', '😎', '🙏', '🤙', '🥶', '✨', '🍕', '🎮', '⚽', '🦸', '🐶', '🍦']
 
+STATUS_MAP = {
+    'eating': [discord.Game("eating pizza"), discord.Game("eating snacks"), discord.Game("eating candy")],
+    'pizza': [discord.Game("eating pizza")],
+    'candy': [discord.Game("eating candy")],
+    'chocolate': [discord.Game("eating chocolate")],
+    'ice cream': [discord.Game("eating ice cream")],
+    'snacks': [discord.Game("eating snacks")],
+    'fortnite': [discord.Game("Fortnite")],
+    'minecraft': [discord.Game("Minecraft")],
+    'roblox': [discord.Game("Roblox")],
+    'soccer': [discord.Game("soccer"), discord.Game("playing soccer outside")],
+    'football': [discord.Game("football")],
+    'play': [discord.Game("with my toys"), discord.Game("with my friends")],
+    'park': [discord.Game("at the park")],
+    'pokemon': [discord.Game("Pokemon")],
+    'mario': [discord.Game("Mario Kart"), discord.Game("Super Mario")],
+    'youtube': [discord.Activity(type=discord.ActivityType.watching, name="YouTube")],
+    'netflix': [discord.Activity(type=discord.ActivityType.watching, name="Netflix")],
+    'spiderman': [discord.Activity(type=discord.ActivityType.watching, name="Spider-Man")],
+    'batman': [discord.Activity(type=discord.ActivityType.watching, name="Batman")],
+    'sleep': [discord.Activity(type=discord.ActivityType.watching, name="my ceiling")],
+    'bedtime': [discord.Activity(type=discord.ActivityType.watching, name="my ceiling")],
+    'homework': [discord.Game("trying to avoid homework"), discord.Game("pretending to do homework")],
+    'school': [discord.Game("waiting for recess")],
+    'swimming': [discord.Game("swimming")],
+    'bike': [discord.Game("riding my bike")],
+    'xbox': [discord.Game("Xbox")],
+    'playstation': [discord.Game("PlayStation")],
+    'nintendo': [discord.Game("Nintendo Switch")],
+    'cartoons': [discord.Activity(type=discord.ActivityType.watching, name="cartoons")],
+    'dog': [discord.Game("with my dog")],
+    'lego': [discord.Game("building a Lego set")],
+}
+
 memory = defaultdict(lambda: deque(maxlen=12))
 last_reply = {}
 COOLDOWN = 2
@@ -118,6 +152,15 @@ class DumbBot(discord.Client):
                 reply = "idk lol"
 
         history.append({'role': 'assistant', 'content': reply})
+
+        combined = (message.content + ' ' + reply).lower()
+        for keyword, activities in STATUS_MAP.items():
+            if keyword in combined:
+                try:
+                    await self.change_presence(activity=random.choice(activities))
+                except:
+                    pass
+                break
 
         if mentioned and random.random() < 0.5:
             reply = f"{message.author.mention} {reply}"
